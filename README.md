@@ -16,11 +16,15 @@ starting point for future changes.
 
 ## Making changes
 
-The next development step is to reconstruct a clean Android project in this
-repository. The existing APK should be treated as the reference build while
-the reconstructed project is brought up screen by screen and behavior by
-behavior. Do not overwrite `artifacts/Guardian-1.apk`; it is the baseline for
-comparison.
+An editable Kotlin/Jetpack Compose reconstruction now lives at the repository
+root. It keeps the `com.guardian.app` package identity and recreates the
+observable app shell: authentication, onboarding, home, events, incidents,
+settings, protection toggles, and local incident reporting.
+
+The original APK remains the reference build at `artifacts/Guardian-1.apk`;
+do not overwrite it. The reconstructed MVP intentionally uses local demo state
+because the original backend and detection services were not included in the
+APK.
 
 See [`docs/apk-inventory.md`](docs/apk-inventory.md) for the reverse-engineered
 inventory and the recommended reconstruction order.
