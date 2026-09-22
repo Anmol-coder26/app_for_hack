@@ -51,6 +51,22 @@ which supports the QR-scanning inference.
 6. Build each milestone and compare it with the preserved APK on a test
    device.
 
+## Reconstructed protection MVP
+
+The editable project now includes local-device protection behavior:
+
+- `CallMonitorService` listens for incoming call state and posts a high-priority
+  warning notification when the phone is ringing.
+- `MessageListenerService` reads notification text after the user grants
+  Notification Listener access and warns on common urgent-scam phrases, OTP
+  requests, UPI/payment language, or links.
+- Settings starts and stops call monitoring and opens the system screen needed
+  to enable notification access.
+
+These checks are deliberately local and conservative. They do not upload
+messages or phone numbers, and they are not a replacement for the original
+Guardian detection service, which was not present in the APK.
+
 ## Important limitation
 
 The APK does not preserve the original Gradle files, Kotlin source files,

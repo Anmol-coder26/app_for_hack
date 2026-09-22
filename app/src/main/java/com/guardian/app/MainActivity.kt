@@ -1,7 +1,11 @@
 package com.guardian.app
 
+import android.Manifest
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,11 +15,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 class MainActivity : ComponentActivity() {
+    private val protectionPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             GuardianTheme {
-                GuardianApp()
+                GuardianApp(
+                    onPhoneProtectionToggle = { enabled ->
+                        if (enabled) {
+                            protectionPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.READ_PHONE_STATE,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            )
+                            startService(Intent(this, CallMonitorService::class.java))
+                        } else {
+                            stopService(Intent(this, CallMonitorService::class.java))
+                        }
+                    },
+                    onMessageProtectionToggle = { enabled ->
+                        if (enabled) {
+                            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                        } else {
+                            stopService(Intent(this, MessageListenerService::class.java))
+                        }
+                    }
+                )
             }
         }
     }

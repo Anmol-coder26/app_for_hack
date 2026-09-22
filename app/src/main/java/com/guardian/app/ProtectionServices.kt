@@ -1,0 +1,111 @@
+package com.guardian.app
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.IBinder
+import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyManager
+import androidx.core.app.NotificationCompat
+
+private object GuardianNotifications {
+    private const val channelId = "guardian_protection"
+
+    fun warn(context: Context, title: String, message: String) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                channelId,
+                "Guardian protection",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+        )
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        manager.notify((title + message).hashCode(), notification)
+    }
+}
+
+class CallMonitorService : Service() {
+    private val callListener = object : PhoneStateListener() {
+        override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+            if (state == TelephonyManager.CALL_STATE_RINGING) {
+                GuardianNotifications.warn(
+                    this@CallMonitorService,
+                    "Incoming call to review",
+                    "Guardian noticed an incoming call. Verify the caller before sharing information."
+                )
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val telephony = getSystemService(TelephonyManager::class.java)
+        if (checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            telephony.listen(callListener, PhoneStateListener.LISTEN_CALL_STATE)
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int =
+        START_STICKY
+
+    override fun onDestroy() {
+        getSystemService(TelephonyManager::class.java)
+            .listen(callListener, PhoneStateListener.LISTEN_NONE)
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
+
+class MessageListenerService : NotificationListenerService() {
+    override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
+        if (statusBarNotification.packageName == packageName) return
+        val extras = statusBarNotification.notification.extras
+        val title = extras.getCharSequence("android.title")?.toString().orEmpty()
+        val text = extras.getCharSequence("android.text")?.toString().orEmpty()
+        val message = "$title $text".trim()
+        if (SuspiciousMessageDetector.isSuspicious(message)) {
+            GuardianNotifications.warn(
+                this,
+                "Message needs a second look",
+                "This notification contains language commonly used in urgent scams. Do not share an OTP, PIN, or payment."
+            )
+        }
+    }
+}
+
+private object SuspiciousMessageDetector {
+    private val warningTerms = listOf(
+        "otp",
+        "one time password",
+        "verify your account",
+        "kyc",
+        "urgent",
+        "blocked account",
+        "upi",
+        "claim reward",
+        "click this link",
+        "remote access"
+    )
+
+    fun isSuspicious(message: String): Boolean {
+        val normalized = message.lowercase()
+        return warningTerms.any(normalized::contains) ||
+            Regex("""https?://\S+""").containsMatchIn(normalized)
+    }
+}

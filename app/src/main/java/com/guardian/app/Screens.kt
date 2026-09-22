@@ -485,7 +485,7 @@ fun SettingsScreen(
         item {
             SettingRow(
                 title = "Message protection",
-                detail = "Check notifications for suspicious patterns",
+                detail = "Check notifications for suspicious patterns; enable access when prompted",
                 checked = state.messageProtection,
                 onCheckedChange = { onToggle(SettingType.Messages, it) }
             )

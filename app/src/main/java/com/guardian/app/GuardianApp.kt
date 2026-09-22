@@ -52,7 +52,10 @@ data class GuardianState(
 )
 
 @Composable
-fun GuardianApp() {
+fun GuardianApp(
+    onPhoneProtectionToggle: (Boolean) -> Unit = {},
+    onMessageProtectionToggle: (Boolean) -> Unit = {}
+) {
     var state by remember { mutableStateOf(GuardianState()) }
     var screen by remember { mutableStateOf(AppScreen.Home) }
 
@@ -151,10 +154,23 @@ fun GuardianApp() {
                         contentPadding = contentPadding,
                         onToggle = { type, enabled ->
                             state = when (type) {
-                                SettingType.All -> state.copy(protectionEnabled = enabled)
+                                SettingType.All -> state.copy(
+                                    protectionEnabled = enabled,
+                                    phoneProtection = enabled,
+                                    messageProtection = enabled
+                                )
                                 SettingType.Phone -> state.copy(phoneProtection = enabled)
                                 SettingType.Messages -> state.copy(messageProtection = enabled)
                                 SettingType.Links -> state.copy(linkProtection = enabled)
+                            }
+                            when (type) {
+                                SettingType.All -> {
+                                    onPhoneProtectionToggle(enabled)
+                                    onMessageProtectionToggle(enabled)
+                                }
+                                SettingType.Phone -> onPhoneProtectionToggle(enabled)
+                                SettingType.Messages -> onMessageProtectionToggle(enabled)
+                                SettingType.Links -> Unit
                             }
                         },
                         onDeleteData = {
