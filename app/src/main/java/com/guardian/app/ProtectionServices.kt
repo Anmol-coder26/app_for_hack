@@ -2,6 +2,7 @@ package com.guardian.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -35,17 +36,59 @@ private object GuardianNotifications {
             .build()
         manager.notify((title + message).hashCode(), notification)
     }
+
+    fun callConnected(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                channelId,
+                "Guardian protection",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+        )
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            420,
+            Intent(context, CallRiskActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("Call connected")
+            .setContentText("Put the call on speaker to check it with Guardian.")
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    "Put the call on speaker, then open Guardian to analyze the conversation. " +
+                        "Guardian does not record or save call audio."
+                )
+            )
+            .setContentIntent(pendingIntent)
+            .addAction(
+                android.R.drawable.ic_media_play,
+                "Analyze call",
+                pendingIntent
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        manager.notify("call-connected".hashCode(), notification)
+    }
 }
 
 class CallMonitorService : Service() {
     private val callListener = object : PhoneStateListener() {
         override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-            if (state == TelephonyManager.CALL_STATE_RINGING) {
-                GuardianNotifications.warn(
-                    this@CallMonitorService,
-                    "Incoming call to review",
-                    "Guardian noticed an incoming call. Verify the caller before sharing information."
-                )
+            when (state) {
+                TelephonyManager.CALL_STATE_RINGING -> {
+                    GuardianNotifications.warn(
+                        this@CallMonitorService,
+                        "Incoming call to review",
+                        "Guardian noticed an incoming call. Verify the caller before sharing information."
+                    )
+                }
+                TelephonyManager.CALL_STATE_OFFHOOK -> {
+                    GuardianNotifications.callConnected(this@CallMonitorService)
+                }
             }
         }
     }

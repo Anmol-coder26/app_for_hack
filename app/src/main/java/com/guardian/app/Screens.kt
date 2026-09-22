@@ -181,6 +181,7 @@ private fun BoxDot(active: Boolean) {
 fun HomeScreen(
     state: GuardianState,
     contentPadding: PaddingValues,
+    onOpenCallRisk: () -> Unit,
     onProtectionChange: (Boolean) -> Unit,
     onAddIncident: (GuardianIncident) -> Unit
 ) {
@@ -226,6 +227,7 @@ fun HomeScreen(
                 MiniAction(
                     title = "Phone guard",
                     icon = Icons.Default.Phone,
+                    onClick = onOpenCallRisk,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -310,9 +312,13 @@ private fun ProtectionCard(enabled: Boolean, onToggle: (Boolean) -> Unit) {
 private fun MiniAction(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit = {},
     modifier: Modifier
 ) {
-    Card(modifier = modifier) {
+    Card(
+        onClick = onClick,
+        modifier = modifier
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

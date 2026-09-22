@@ -60,12 +60,21 @@ The editable project now includes local-device protection behavior:
 - `MessageListenerService` reads notification text after the user grants
   Notification Listener access and warns on common urgent-scam phrases, OTP
   requests, UPI/payment language, or links.
+- `CallRiskActivity` provides an explicit speakerphone analysis screen. It
+  requests microphone access only when started, prefers Android's on-device
+  speech recognizer, and passes transient transcript text to a replaceable
+  scam analyzer.
 - Settings starts and stops call monitoring and opens the system screen needed
   to enable notification access.
 
 These checks are deliberately local and conservative. They do not upload
 messages or phone numbers, and they are not a replacement for the original
 Guardian detection service, which was not present in the APK.
+
+Android does not expose ordinary cellular call audio directly to third-party
+apps. The live call-risk screen therefore listens through the microphone after
+the user puts the call on speaker. It does not record or save raw audio, and
+the temporary transcript is discarded when the user stops analysis.
 
 ## Important limitation
 

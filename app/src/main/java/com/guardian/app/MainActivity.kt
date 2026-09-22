@@ -16,13 +16,20 @@ import androidx.compose.ui.graphics.Color
 
 class MainActivity : ComponentActivity() {
     private val protectionPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            if (permissions[Manifest.permission.READ_PHONE_STATE] == true) {
+                startService(Intent(this, CallMonitorService::class.java))
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             GuardianTheme {
                 GuardianApp(
+                    onOpenCallRisk = {
+                        startActivity(Intent(this, CallRiskActivity::class.java))
+                    },
                     onPhoneProtectionToggle = { enabled ->
                         if (enabled) {
                             protectionPermissionLauncher.launch(
@@ -31,7 +38,6 @@ class MainActivity : ComponentActivity() {
                                     Manifest.permission.POST_NOTIFICATIONS
                                 )
                             )
-                            startService(Intent(this, CallMonitorService::class.java))
                         } else {
                             stopService(Intent(this, CallMonitorService::class.java))
                         }

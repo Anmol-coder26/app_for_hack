@@ -53,6 +53,7 @@ data class GuardianState(
 
 @Composable
 fun GuardianApp(
+    onOpenCallRisk: () -> Unit = {},
     onPhoneProtectionToggle: (Boolean) -> Unit = {},
     onMessageProtectionToggle: (Boolean) -> Unit = {}
 ) {
@@ -111,6 +112,7 @@ fun GuardianApp(
                     AppScreen.Home -> HomeScreen(
                         state = state,
                         contentPadding = contentPadding,
+                        onOpenCallRisk = onOpenCallRisk,
                         onProtectionChange = { enabled ->
                             state = state.copy(
                                 protectionEnabled = enabled,
