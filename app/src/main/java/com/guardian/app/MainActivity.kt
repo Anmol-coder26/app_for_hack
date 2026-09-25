@@ -18,7 +18,9 @@ class MainActivity : ComponentActivity() {
     private val protectionPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             if (permissions[Manifest.permission.READ_PHONE_STATE] == true) {
-                startService(Intent(this, CallMonitorService::class.java))
+                try {
+                    startService(Intent(this, CallMonitorService::class.java))
+                } catch (_: Exception) {}
             }
         }
 
@@ -30,6 +32,9 @@ class MainActivity : ComponentActivity() {
                     onOpenCallRisk = {
                         startActivity(Intent(this, CallRiskActivity::class.java))
                     },
+                    onOpenQrScanner = {
+                        startActivity(Intent(this, QrScannerActivity::class.java))
+                    },
                     onPhoneProtectionToggle = { enabled ->
                         if (enabled) {
                             protectionPermissionLauncher.launch(
@@ -39,14 +44,18 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         } else {
-                            stopService(Intent(this, CallMonitorService::class.java))
+                            try {
+                                stopService(Intent(this, CallMonitorService::class.java))
+                            } catch (_: Exception) {}
                         }
                     },
                     onMessageProtectionToggle = { enabled ->
                         if (enabled) {
                             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                         } else {
-                            stopService(Intent(this, MessageListenerService::class.java))
+                            try {
+                                stopService(Intent(this, MessageListenerService::class.java))
+                            } catch (_: Exception) {}
                         }
                     }
                 )
@@ -55,28 +64,43 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Sophisticated Obsidian Cyber Palette (Pleasing, Modern, Non-Generic)
+val DarkBackground = Color(0xFF090D16)
+val DarkSurface = Color(0xFF111726)
+val DarkSurfaceElevated = Color(0xFF192237)
+val DarkSurfaceVariant = Color(0xFF222F4C)
+val CyberEmerald = Color(0xFF10B981)
+val CyberEmeraldGlow = Color(0xFF064E3B)
+val ElectricIndigo = Color(0xFF6366F1)
+val CoralRed = Color(0xFFEF4444)
+val AmberWarning = Color(0xFFF59E0B)
+val TextPrimary = Color(0xFFF8FAFC)
+val TextSecondary = Color(0xFF94A3B8)
+val TextMuted = Color(0xFF64748B)
+val BorderSubtle = Color(0xFF1E293B)
+
 @Composable
 fun GuardianTheme(content: @Composable () -> Unit) {
-    val lightColors = lightColorScheme(
-        primary = Color(0xFF2F7D5A),
-        onPrimary = Color.White,
-        primaryContainer = Color(0xFFC5EBD5),
-        onPrimaryContainer = Color(0xFF062016),
-        secondary = Color(0xFF526B5B),
-        background = Color(0xFFF7FAF8),
-        surface = Color(0xFFF7FAF8),
-        surfaceVariant = Color(0xFFE1E9E3),
-        onSurface = Color(0xFF17201A)
-    )
     val darkColors = darkColorScheme(
-        primary = Color(0xFF9FD5B6),
-        onPrimary = Color(0xFF07371D),
-        primaryContainer = Color(0xFF185333),
-        onPrimaryContainer = Color(0xFFC5EBD5)
+        primary = CyberEmerald,
+        onPrimary = Color(0xFF022C22),
+        primaryContainer = CyberEmeraldGlow,
+        onPrimaryContainer = Color(0xFFA7F3D0),
+        secondary = ElectricIndigo,
+        onSecondary = Color.White,
+        background = DarkBackground,
+        surface = DarkSurface,
+        surfaceVariant = DarkSurfaceVariant,
+        onSurface = TextPrimary,
+        onSurfaceVariant = TextSecondary,
+        error = CoralRed,
+        errorContainer = Color(0xFF450A0A),
+        onErrorContainer = Color(0xFFFECACA),
+        outline = BorderSubtle
     )
 
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) darkColors else lightColors,
+        colorScheme = darkColors,
         content = content
     )
 }

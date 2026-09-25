@@ -1,12 +1,28 @@
+# Secrets & Env
+.env
+*/.env
+server/.env
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# Node
+node_modules/
+*/node_modules/
+
+# Build & Binaries
 .gradle/
 .idea/
-local.properties
+.kotlin/
 build/
 */build/
 captures/
 .externalNativeBuild/
 .cxx/
 *.iml
-keystore.properties
-*.jks
-*.keystore
+*.apk
+artifacts/
+*.log
+hs_err_pid*
+replay_pid*

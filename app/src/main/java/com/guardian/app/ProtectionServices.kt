@@ -14,7 +14,7 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import androidx.core.app.NotificationCompat
 
-private object GuardianNotifications {
+internal object GuardianNotifications {
     private const val channelId = "guardian_protection"
 
     fun warn(context: Context, title: String, message: String) {
@@ -134,16 +134,20 @@ class MessageListenerService : NotificationListenerService() {
 
 private object SuspiciousMessageDetector {
     private val warningTerms = listOf(
-        "otp",
-        "one time password",
-        "verify your account",
-        "kyc",
-        "urgent",
-        "blocked account",
-        "upi",
-        "claim reward",
-        "click this link",
-        "remote access"
+        // Credentials / OTP
+        "otp", "one time password", "verification code", "cvv", "security pin", "password", "ओटीपी",
+        // Banking & KYC
+        "verify your account", "kyc", "kyc update", "kyc expire", "pan card", "blocked account",
+        "account suspended", "debit card block", "khata block", "rbi", "sbi", "hdfc", "icici",
+        // Electricity & Utility
+        "electricity", "power cut", "bijli bill", "bill unpaid", "disconnection", "bijli cut", "bijli vibhag",
+        // Urgency & Law Enforcement
+        "urgent", "arrest", "police", "cbi", "fir registered", "digital arrest", "legal action", "immediately",
+        // Payments & Rewards
+        "upi", "send money", "transfer money", "claim reward", "lottery", "cashback", "you have won",
+        "telegram task", "youtube like", "part time job", "kbc",
+        // Remote access & malicious downloads
+        "click this link", "remote access", "anydesk", "teamviewer", "rustdesk", "quicksupport", "download apk"
     )
 
     fun isSuspicious(message: String): Boolean {

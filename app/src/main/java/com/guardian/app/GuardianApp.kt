@@ -1,39 +1,63 @@
 package com.guardian.app
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
-enum class AppScreen {
-    Home, Events, Incidents, Settings
+enum class AppScreen(val title: String) {
+    Home("Home"),
+    Events("Audit Log"),
+    Incidents("Threats"),
+    Settings("Settings")
 }
 
 data class GuardianEvent(
     val title: String,
     val detail: String,
     val time: String,
-    val safe: Boolean
+    val safe: Boolean,
+    val category: String = "SYSTEM"
 )
 
 data class GuardianIncident(
     val title: String,
     val detail: String,
     val time: String,
-    val risk: String
+    val risk: String,
+    val threatType: String = "Fraud Attempt"
 )
 
 data class GuardianState(
@@ -45,8 +69,9 @@ data class GuardianState(
     val messageProtection: Boolean = true,
     val linkProtection: Boolean = true,
     val events: List<GuardianEvent> = listOf(
-        GuardianEvent("Protection enabled", "Guardian is watching for risky activity", "Just now", true),
-        GuardianEvent("Phone check ready", "Incoming calls can be reviewed", "Today", true)
+        GuardianEvent("Real-Time Shield Online", "Speakerphone & SMS threat detectors are running", "Just now", true, "SHIELD"),
+        GuardianEvent("Continuous STT Initialized", "English, Hindi & Hinglish models ready", "Just now", true, "SPEECH"),
+        GuardianEvent("Background Protection Active", "Monitoring incoming calls and message payloads", "Today", true, "MONITOR")
     ),
     val incidents: List<GuardianIncident> = emptyList()
 )
@@ -54,58 +79,111 @@ data class GuardianState(
 @Composable
 fun GuardianApp(
     onOpenCallRisk: () -> Unit = {},
+    onOpenQrScanner: () -> Unit = {},
     onPhoneProtectionToggle: (Boolean) -> Unit = {},
     onMessageProtectionToggle: (Boolean) -> Unit = {}
 ) {
-    var state by remember { mutableStateOf(GuardianState()) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    var state by remember {
+        mutableStateOf(
+            GuardianState(
+                name = SessionManager.getUserName(context).ifBlank { "Guardian User" },
+                signedIn = SessionManager.isLoggedIn(context),
+                onboardingComplete = SessionManager.isOnboardingComplete(context)
+            )
+        )
+    }
     var screen by remember { mutableStateOf(AppScreen.Home) }
 
     when {
         !state.signedIn -> AuthScreen(
             onContinue = { name ->
-                state = state.copy(name = name, signedIn = true)
+                val finalName = name.ifBlank { "Guardian User" }
+                SessionManager.saveSession(context, finalName, "user@guardian.defense")
+                state = state.copy(name = finalName, signedIn = true)
             }
         )
 
         !state.onboardingComplete -> OnboardingScreen(
             name = state.name,
-            onComplete = { state = state.copy(onboardingComplete = true) }
+            onComplete = {
+                SessionManager.setOnboardingComplete(context, true)
+                state = state.copy(onboardingComplete = true)
+            }
         )
 
         else -> Scaffold(
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = DarkSurface,
+                    contentColor = TextPrimary,
+                    tonalElevation = 8.dp,
+                    modifier = Modifier.border(width = 1.dp, color = BorderSubtle)
+                ) {
                     NavigationBarItem(
                         selected = screen == AppScreen.Home,
                         onClick = { screen = AppScreen.Home },
-                        icon = { androidx.compose.material3.Icon(Icons.Default.Home, null) },
-                        label = { androidx.compose.material3.Text("Home") }
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(22.dp)) },
+                        label = { Text("Home", fontSize = 11.sp, fontWeight = if (screen == AppScreen.Home) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = CyberEmerald,
+                            selectedTextColor = CyberEmerald,
+                            indicatorColor = CyberEmeraldGlow,
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary
+                        )
                     )
                     NavigationBarItem(
                         selected = screen == AppScreen.Events,
                         onClick = { screen = AppScreen.Events },
-                        icon = { androidx.compose.material3.Icon(Icons.Default.EventNote, null) },
-                        label = { androidx.compose.material3.Text("Events") }
+                        icon = { Icon(Icons.AutoMirrored.Filled.EventNote, contentDescription = "Events", modifier = Modifier.size(22.dp)) },
+                        label = { Text("Audit Log", fontSize = 11.sp, fontWeight = if (screen == AppScreen.Events) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = CyberEmerald,
+                            selectedTextColor = CyberEmerald,
+                            indicatorColor = CyberEmeraldGlow,
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary
+                        )
                     )
                     NavigationBarItem(
                         selected = screen == AppScreen.Incidents,
                         onClick = { screen = AppScreen.Incidents },
-                        icon = { androidx.compose.material3.Icon(Icons.Default.Warning, null) },
-                        label = { androidx.compose.material3.Text("Incidents") }
+                        icon = { Icon(Icons.Default.WarningAmber, contentDescription = "Incidents", modifier = Modifier.size(22.dp)) },
+                        label = { Text("Threats", fontSize = 11.sp, fontWeight = if (screen == AppScreen.Incidents) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = CoralRed,
+                            selectedTextColor = CoralRed,
+                            indicatorColor = Color(0xFF450A0A),
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary
+                        )
                     )
                     NavigationBarItem(
                         selected = screen == AppScreen.Settings,
                         onClick = { screen = AppScreen.Settings },
-                        icon = { androidx.compose.material3.Icon(Icons.Default.Settings, null) },
-                        label = { androidx.compose.material3.Text("Settings") }
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(22.dp)) },
+                        label = { Text("Settings", fontSize = 11.sp, fontWeight = if (screen == AppScreen.Settings) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = CyberEmerald,
+                            selectedTextColor = CyberEmerald,
+                            indicatorColor = CyberEmeraldGlow,
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary
+                        )
                     )
                 }
             }
         ) { padding ->
             AnimatedContent(
                 targetState = screen,
-                label = "guardian-screen",
-                modifier = Modifier.padding(padding)
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "guardian-screen-transition",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DarkBackground)
+                    .padding(padding)
             ) { target ->
                 val contentPadding = PaddingValues()
                 when (target) {
@@ -113,16 +191,18 @@ fun GuardianApp(
                         state = state,
                         contentPadding = contentPadding,
                         onOpenCallRisk = onOpenCallRisk,
+                        onOpenQrScanner = onOpenQrScanner,
                         onProtectionChange = { enabled ->
                             state = state.copy(
                                 protectionEnabled = enabled,
                                 events = listOf(
                                     GuardianEvent(
-                                        if (enabled) "Protection enabled" else "Protection paused",
-                                        if (enabled) "Guardian is watching for risky activity"
-                                        else "Only on-phone checks are running",
+                                        if (enabled) "Shield Protection Re-enabled" else "Shield Protection Paused",
+                                        if (enabled) "Real-time scam filtering active across all channels"
+                                        else "On-phone sensor listeners are in standby",
                                         "Just now",
-                                        enabled
+                                        enabled,
+                                        "STATE"
                                     )
                                 ) + state.events
                             )
@@ -131,7 +211,7 @@ fun GuardianApp(
                             state = state.copy(
                                 incidents = listOf(incident) + state.incidents,
                                 events = listOf(
-                                    GuardianEvent("Incident reported", incident.title, "Just now", false)
+                                    GuardianEvent("Threat Flagged", incident.title, "Just now", false, "ALERT")
                                 ) + state.events
                             )
                             screen = AppScreen.Incidents
@@ -177,6 +257,11 @@ fun GuardianApp(
                         },
                         onDeleteData = {
                             state = GuardianState(name = state.name, signedIn = true, onboardingComplete = true)
+                            screen = AppScreen.Home
+                        },
+                        onLogout = {
+                            SessionManager.clearSession(context)
+                            state = GuardianState(signedIn = false, onboardingComplete = false)
                             screen = AppScreen.Home
                         }
                     )
